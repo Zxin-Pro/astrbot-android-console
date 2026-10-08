@@ -1,0 +1,58 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: 安装 Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: 安装 build-tools 与 platform
+        run: |
+          sdkmanager --install "platforms;android-34" "build-tools;34.0.0" > /dev/null
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          ls "$ANDROID_HOME/build-tools"
+
+      - name: 构建 APK
+        run: bash scripts/build.sh
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: astrbot-console-apk
+          path: dist/*.apk
+          if-no-files-found: error
+
+      - name: 发布 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: AstrBot 控制台 · 最新构建
+          body: |
+            自动构建的 **AstrBot + NapCat 安卓控制台** APK。
+
+            - 支持 Android 5.0+（API 21+）
+            - 内嵌 AstrBot / NapCat 管理面板
+            - 一键调用 Termux 安装 / 启动 / 停止 / 看日志
+
+            使用前请确保 Termux 已开启外部调用：
+            `~/.termux/termux.properties` 中设置 `allow-external-apps=true`
+          files: dist/*.apk
+          make_latest: true
