@@ -8,7 +8,8 @@ import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../controllers/terminal_controller.dart';
-import '../../widgets/glass_panel.dart';
+import '../../../core/theme/ds.dart';
+import '../../widgets/app_kit.dart';
 import '../settings/settings_page.dart';
 import '../terminal/terminal_tab_view.dart';
 import '../../navbar/bottom_nav_bar.dart';
@@ -1042,11 +1043,15 @@ class _WebViewPageState extends State<WebViewPage> {
   Widget _buildWebUiTabBar(List<_WebUiTarget> targets, int selectedIndex) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
-      child: GlassPanel(
-        borderRadius: BorderRadius.circular(18),
+      child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 6),
-        opacity: homeController.topNavGlassOpacity.value,
-        blur: homeController.glassBlurAmount.value * 30,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: Ds.brMd,
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
+          ),
+        ),
         child: MediaQuery.withNoTextScaling(
           child: SizedBox(
             height: 38,

@@ -202,16 +202,6 @@ class AboutPage extends StatelessWidget {
                                   ),
                                 ),
                               _SettingItem(
-                                title: S.current.privacyPolicy,
-                                suffix: Icon(
-                                  Icons.arrow_forward_ios,
-                                  size: 16.w,
-                                ),
-                                onTap: () {
-                                  openPage(const PrivacyPage(), title: '隐私政策');
-                                },
-                              ),
-                              _SettingItem(
                                 title: S.current.OpenSourceLicenses,
                                 suffix: Icon(
                                   Icons.arrow_forward_ios,

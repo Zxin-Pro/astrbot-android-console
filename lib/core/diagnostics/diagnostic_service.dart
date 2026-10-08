@@ -219,7 +219,7 @@ class DiagnosticService {
           case 0:
             item
               ..status = DiagnosticStatus.passed
-              ..detail = '泡泡版运行正常';
+              ..detail = '运行正常';
             break;
           case 1:
             await _checkBackgroundPermission(item);

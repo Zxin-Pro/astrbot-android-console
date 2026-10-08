@@ -1,7 +1,7 @@
-name: astrbot_deepglass
-description: AstrBot 深夜流璃
+name: shenye_liuli
+description: AstrBot 深夜流璃 — 在 Android 上运行 AstrBot 的图形化应用
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
-version: 0.1.0-beta5.5+5
+version: 1.0.0+1
 environment:
   sdk: ">=3.3.0 <4.0.0"
 

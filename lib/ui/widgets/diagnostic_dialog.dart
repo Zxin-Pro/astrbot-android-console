@@ -192,19 +192,19 @@ Future<void> _exportReport(
   }
   if (!permission.isGranted) return;
 
-  final directory = Directory('/storage/emulated/0/Download/AstrBotBubble');
+  final directory = Directory('/storage/emulated/0/Download/深夜流璃');
   await directory.create(recursive: true);
   final stamp = report.startedAt
       .toLocal()
       .toIso8601String()
       .replaceAll(RegExp('[^0-9]'), '')
       .substring(0, 14);
-  await File('${directory.path}/AstrBotBubble-diagnostic-$stamp.txt')
+  await File('${directory.path}/深夜流璃-diagnostic-$stamp.txt')
       .writeAsString(report.toText());
   if (context.mounted) {
     Get.snackbar(
       '导出成功',
-      '报告已保存到 Download/AstrBotBubble',
+      '报告已保存到 Download/深夜流璃',
       snackPosition: SnackPosition.BOTTOM,
     );
   }

@@ -637,7 +637,7 @@ check_astrbot_ready(){
 install_astrbot(){
   local INSTALL_DIR="$HOME/AstrBot"
   local CLONE_TEMP_DIR="$HOME/AstrBot_tmp"
-  local BACKUP_DIR="/sdcard/Download/AstrBotBubble"
+  local BACKUP_DIR="/sdcard/Download/深夜流璃"
 
   rm -rf "$CLONE_TEMP_DIR"
 
@@ -724,7 +724,7 @@ install_astrbot(){
     # 检查并恢复最新备份
     if [ -d "$BACKUP_DIR" ]; then
       echo "扫描备份目录: $BACKUP_DIR"
-      LATEST_BACKUP=$(ls -t "$BACKUP_DIR"/AstrBotBubble-backup-*.tar.gz 2>/dev/null | head -n 1)
+      LATEST_BACKUP=$(ls -t "$BACKUP_DIR"/深夜流璃-backup-*.tar.gz 2>/dev/null | head -n 1)
       
       if [ -n "$LATEST_BACKUP" ]; then
         echo "找到备份文件: $LATEST_BACKUP"

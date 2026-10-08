@@ -35,8 +35,8 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   static const String _backupDirPath =
-      '/storage/emulated/0/Download/AstrBotBubble';
-  static const String _backupFilePrefix = 'AstrBotBubble-backup-';
+      '/storage/emulated/0/Download/深夜流璃';
+  static const String _backupFilePrefix = '深夜流璃-backup-';
   static const String _backupFileSuffix = '.tar.gz';
 
   String _appVersion = '';
@@ -749,7 +749,7 @@ class _SettingsPageState extends State<SettingsPage> {
     if (!await backupDir.exists()) {
       Get.snackbar(
         '没有备份',
-        '未找到泡泡版备份目录：$_backupDirPath',
+        '未找到备份目录：$_backupDirPath',
         snackPosition: SnackPosition.BOTTOM,
         duration: const Duration(seconds: 3),
       );
@@ -774,7 +774,7 @@ class _SettingsPageState extends State<SettingsPage> {
     if (backups.isEmpty) {
       Get.snackbar(
         '没有备份',
-        '$_backupDirPath 下没有泡泡版备份文件',
+        '$_backupDirPath 下没有备份文件',
         snackPosition: SnackPosition.BOTTOM,
         duration: const Duration(seconds: 3),
       );
@@ -1137,51 +1137,55 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      children: [
-        const Padding(
-          padding: EdgeInsets.all(16.0),
-          child: Text(
-            '设置',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+        title: const Text('设置'),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.only(bottom: Ds.s8),
+        children: [
+          ListTile(
+            leading: const Icon(Icons.health_and_safety_outlined),
+            title: const Text('自诊断'),
+            subtitle: const Text('检查环境、进程、连接和 AstrBot 配置'),
+            onTap: () => showDiagnosticDialog(context, Get.find<HomeController>()),
           ),
-        ),
-        ListTile(
-          leading: const Icon(Icons.health_and_safety_outlined),
-          title: const Text('自诊断'),
-          subtitle: const Text('检查环境、进程、连接和 AstrBot 配置'),
-          onTap: () => showDiagnosticDialog(context, Get.find<HomeController>()),
-        ),
-        ListTile(
-          leading: const Icon(Icons.info_outline),
-          title: const Text('软件版本'),
-          subtitle: Text(
-            _appVersion.isEmpty ? '加载中...' : '$_appVersion（点击检查更新）',
+          ListTile(
+            leading: const Icon(Icons.info_outline),
+            title: const Text('软件版本'),
+            subtitle: Text(
+              _appVersion.isEmpty ? '加载中...' : '$_appVersion（点击检查更新）',
+            ),
+            onTap: () => _checkForUpdates(),
           ),
-          onTap: () => _checkForUpdates(),
-        ),
-        Obx(() {
-          final backgroundPath =
-              Get.find<HomeController>().homeBackgroundPath.value;
-          return ListTile(
-            leading: const Icon(Icons.image_outlined),
-            title: const Text('主页背景图片'),
-            subtitle: Text(backgroundPath.isEmpty ? '使用默认背景' : backgroundPath),
-            trailing: backgroundPath.isEmpty
-                ? null
-                : IconButton(
-                    tooltip: '清除背景',
-                    onPressed: _clearHomeBackground,
-                    icon: const Icon(Icons.close),
-                  ),
-            onTap: _pickHomeBackground,
-          );
-        }),
-        Obx(() {
-          final controller = Get.find<HomeController>();
-          return _buildHomeFontScaleStepper(controller);
-        }),
-        Obx(() {
+          Obx(() {
+            final backgroundPath =
+                Get.find<HomeController>().homeBackgroundPath.value;
+            return ListTile(
+              leading: const Icon(Icons.image_outlined),
+              title: const Text('主页背景图片'),
+              subtitle:
+                  Text(backgroundPath.isEmpty ? '使用默认背景' : backgroundPath),
+              trailing: backgroundPath.isEmpty
+                  ? null
+                  : IconButton(
+                      tooltip: '清除背景',
+                      onPressed: _clearHomeBackground,
+                      icon: const Icon(Icons.close),
+                    ),
+              onTap: _pickHomeBackground,
+            );
+          }),
+          Obx(() {
+            final controller = Get.find<HomeController>();
+            return _buildHomeFontScaleStepper(controller);
+          }),
+          Obx(() {
           final controller = Get.find<HomeController>();
           return _buildOpacitySlider(
             title: '卡片透明度',
@@ -1191,7 +1195,7 @@ class _SettingsPageState extends State<SettingsPage> {
             onChanged: controller.setCardGlassOpacity,
           );
         }),
-        Obx(() {
+          Obx(() {
           final controller = Get.find<HomeController>();
           return _buildOpacitySlider(
             title: '毛玻璃度',
@@ -1203,7 +1207,7 @@ class _SettingsPageState extends State<SettingsPage> {
             onChanged: controller.setGlassBlurAmount,
           );
         }),
-        Obx(() {
+          Obx(() {
           final controller = Get.find<HomeController>();
           return _buildOpacitySlider(
             title: '顶部导航透明度',
@@ -1213,7 +1217,7 @@ class _SettingsPageState extends State<SettingsPage> {
             onChanged: controller.setTopNavGlassOpacity,
           );
         }),
-        Obx(() {
+          Obx(() {
           final controller = Get.find<HomeController>();
           return _buildOpacitySlider(
             title: '设置背景遮罩',
@@ -1223,7 +1227,7 @@ class _SettingsPageState extends State<SettingsPage> {
             onChanged: controller.setStatusOverlayOpacity,
           );
         }),
-        Obx(() {
+          Obx(() {
           final controller = Get.find<HomeController>();
           return _buildOpacitySlider(
             title: '终端黑色遮罩',
@@ -1468,7 +1472,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ListTile(
           leading: const Icon(Icons.restore),
           title: const Text('还原 AstrBot 数据'),
-          subtitle: const Text('从 Download/AstrBotBubble 选择备份还原'),
+          subtitle: const Text('从 Download/深夜流璃 选择备份还原'),
           onTap: _showRestoreBackupDialog,
         ),
         ListTile(
@@ -1645,7 +1649,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ListTile(
           leading: const Icon(Icons.delete_outline),
           title: const Text('清空本应用 WebView 缓存'),
-          subtitle: const Text('只清理泡泡版 WebView 缓存和本应用保存的密码'),
+          subtitle: const Text('只清理 WebView 缓存和本应用保存的密码'),
           onTap: () async {
             try {
               await widget.astrBotController.clearCache();
@@ -1663,81 +1667,6 @@ class _SettingsPageState extends State<SettingsPage> {
                 Get.snackbar(
                   '清理失败',
                   e.toString(),
-                  snackPosition: SnackPosition.BOTTOM,
-                  backgroundColor: Colors.red,
-                  colorText: Colors.white,
-                );
-              }
-            }
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.privacy_tip_outlined),
-          title: const Text('隐私政策'),
-          subtitle: const Text('查看应用隐私政策'),
-          onTap: () async {
-            try {
-              final privacyContent =
-                  await rootBundle.loadString('assets/privacy_policy.md');
-              if (context.mounted) {
-                Get.dialog(
-                  Dialog(
-                    child: Column(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Row(
-                            children: [
-                              const Text(
-                                '隐私政策',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const Spacer(),
-                              IconButton(
-                                icon: const Icon(Icons.close),
-                                onPressed: () => Get.back(),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Divider(height: 1),
-                        Expanded(
-                          child: SingleChildScrollView(
-                            padding: const EdgeInsets.all(16.0),
-                            child: MarkdownBody(
-                              data: privacyContent,
-                              styleSheet: MarkdownStyleSheet(
-                                h1: const TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                h2: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                h3: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                p: const TextStyle(fontSize: 14),
-                                listBullet: const TextStyle(fontSize: 14),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }
-            } catch (e) {
-              if (context.mounted) {
-                Get.snackbar(
-                  '加载失败',
-                  '无法加载隐私政策: $e',
                   snackPosition: SnackPosition.BOTTOM,
                   backgroundColor: Colors.red,
                   colorText: Colors.white,
@@ -1792,6 +1721,7 @@ class _SettingsPageState extends State<SettingsPage> {
           },
         ),
       ],
+      ),
     );
   }
 }

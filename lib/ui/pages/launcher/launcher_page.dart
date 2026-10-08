@@ -12,7 +12,9 @@ import '../../../core/config/environment_config.dart';
 import '../../../core/config/service_ports.dart';
 import '../../../core/constants/scripts.dart' as scripts;
 import '../../controllers/terminal_controller.dart';
-import '../../widgets/glass_panel.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/ds.dart';
+import '../../widgets/app_kit.dart';
 
 class LauncherPage extends StatefulWidget {
   final ValueChanged<int>? onNavigate;
@@ -26,10 +28,6 @@ class LauncherPage extends StatefulWidget {
 
 class _LauncherPageState extends State<LauncherPage>
     with WidgetsBindingObserver {
-  static final Uri _installerRepositoryUri =
-      Uri.parse(
-        'https://github.com/MuFengDR/AstrBot-Android-Scripts/releases/latest',
-      );
   final HomeController homeController = Get.find<HomeController>();
   final Map<String, _EnvStepState> _environmentStates = {};
   final Map<String, _NapCatAccountOperation> _napCatBusyOperations = {};
@@ -54,17 +52,6 @@ class _LauncherPageState extends State<LauncherPage>
     if (mounted) setState(() {});
   }
 
-  Future<void> _openInstallerRepository() async {
-    try {
-      final opened = await launchUrl(
-        _installerRepositoryUri,
-        mode: LaunchMode.externalApplication,
-      );
-      if (!opened && mounted) _showSnack('无法打开脚本仓库');
-    } catch (_) {
-      if (mounted) _showSnack('无法打开脚本仓库');
-    }
-  }
 
   @override
   void initState() {
@@ -276,180 +263,49 @@ class _LauncherPageState extends State<LauncherPage>
     );
   }
 
-  Future<void> _checkThenOfferInstallerUpdate() async {
-    final isFirstDownload =
-        _installerScriptState == _InstallerScriptState.notDownloaded;
-    InstallerUpdateCheckResult? result;
-    StateSetter? updateDialog;
-    VoidCallback? cancelCheck;
-    Timer? checkTimeout;
-    var dialogOpen = true;
-    var started = false;
-    var checkGeneration = 0;
 
-    Future<void> runCheck() async {
-      final generation = ++checkGeneration;
-      checkTimeout?.cancel();
-      checkTimeout = Timer(const Duration(seconds: 60), () {
-        if (!mounted || !dialogOpen || generation != checkGeneration) return;
-        checkGeneration++;
-        cancelCheck?.call();
-        updateDialog?.call(
-          () => result = InstallerUpdateCheckResult.timedOut,
-        );
-      });
-      try {
-        await homeController.checkInstallerUpdate(
-          onCancelReady: (cancel) {
-            if (generation != checkGeneration) {
-              cancel();
-            } else {
-              cancelCheck = cancel;
-            }
-          },
-          onResult: (value) {
-            if (generation != checkGeneration ||
-                !mounted ||
-                !dialogOpen ||
-                updateDialog == null) {
-              return;
-            }
-            checkTimeout?.cancel();
-            updateDialog!(() => result = value);
-          },
-        );
-      } catch (_) {
-        if (generation != checkGeneration ||
-            !mounted ||
-            !dialogOpen ||
-            updateDialog == null) {
-          return;
-        }
-        checkTimeout?.cancel();
-        updateDialog!(() => result = InstallerUpdateCheckResult.failed);
-      }
-    }
 
-    await showDialog<void>(
+  /// 一键安装：调用内置安装脚本，无需联网下载
+  Future<void> _runBuiltinInstaller() async {
+    final steps = _environmentStates.values
+        .where((s) => !s.installed && s.enabled)
+        .length;
+    final confirmed = await showDialog<bool>(
       context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          updateDialog = setDialogState;
-          if (!started) {
-            started = true;
-            WidgetsBinding.instance.addPostFrameCallback((_) => runCheck());
-          }
-
-          final checking = result == null;
-          final icon = switch (result) {
-            InstallerUpdateCheckResult.failed => Icons.error_outline,
-            InstallerUpdateCheckResult.timedOut => Icons.timer_off_outlined,
-            InstallerUpdateCheckResult.updateAvailable =>
-              Icons.system_update_alt,
-            InstallerUpdateCheckResult.upToDate => Icons.check_circle_outline,
-            null => null,
-          };
-          final message = switch (result) {
-            InstallerUpdateCheckResult.failed =>
-              '检查失败。关闭此提示后可到终端查看检查日志，或前往脚本仓库下载离线包后手动导入。',
-            InstallerUpdateCheckResult.timedOut =>
-              '检查超过 60 秒，已停止。关闭此提示后可到终端查看检查日志，或前往脚本仓库下载离线包后手动导入。',
-            InstallerUpdateCheckResult.updateAvailable =>
-              isFirstDownload
-                  ? '已找到可用安装脚本，是否立即下载？'
-                  : '发现新版安装脚本，是否立即更新？',
-            InstallerUpdateCheckResult.upToDate => '当前已是最新安装脚本。',
-            null => '正在检查安装脚本更新，请稍候…',
-          };
-
-          return AlertDialog(
-            title: const Text('安装脚本更新'),
-            content: Row(
-              children: [
-                if (checking)
-                  const SizedBox.square(
-                    dimension: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2.5),
-                  )
-                else
-                  Icon(icon),
-                const SizedBox(width: 16),
-                Expanded(child: Text(message)),
-              ],
-            ),
-            actions: [
-              if (checking)
-                TextButton(
-                  onPressed: () {
-                    checkGeneration++;
-                    checkTimeout?.cancel();
-                    dialogOpen = false;
-                    cancelCheck?.call();
-                    Navigator.of(dialogContext).pop();
-                  },
-                  child: const Text('取消'),
-                ),
-              if (!checking)
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: const Text('关闭'),
-                ),
-              if (result == InstallerUpdateCheckResult.failed ||
-                  result == InstallerUpdateCheckResult.timedOut)
-                TextButton.icon(
-                  onPressed: _openInstallerRepository,
-                  icon: const Icon(Icons.open_in_new),
-                  label: const Text('打开脚本仓库'),
-                ),
-              if (result == InstallerUpdateCheckResult.failed ||
-                  result == InstallerUpdateCheckResult.timedOut)
-                FilledButton.tonal(
-                  onPressed: () {
-                    cancelCheck = null;
-                    setDialogState(() => result = null);
-                    runCheck();
-                  },
-                  child: const Text('重试'),
-                ),
-              if (result == InstallerUpdateCheckResult.updateAvailable)
-                FilledButton(
-                  onPressed: () async {
-                    Navigator.of(dialogContext).pop();
-                    await homeController.updateInstaller(
-                      onCommandDone: _refreshEnvironmentStatus,
-                    );
-                    _showSnack('正在终端更新安装脚本');
-                    widget.onNavigate?.call(2);
-                  },
-                  child: Text(isFirstDownload ? '立即下载' : '立即更新'),
-                ),
-            ],
-          );
-        },
+      builder: (ctx) => AlertDialog(
+        title: const Text('一键安装'),
+        content: Text(
+          steps > 0
+              ? '将安装尚未完成的 $steps 个组件。\n\n'
+                  '安装过程在后台容器内进行，可在终端查看实时输出。\n'
+                  '首次安装需要下载依赖，请保持网络畅通。'
+              : '所有组件均已安装。\n\n'
+                  '如需重装，请在下方列表中选择对应组件。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('开始安装'),
+          ),
+        ],
       ),
     );
-    checkGeneration++;
-    checkTimeout?.cancel();
-    dialogOpen = false;
-  }
+    if (confirmed != true || !mounted) return;
 
-  Future<void> _importInstallerPackage() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: const ['gz', 'tgz'],
-      withData: true,
-    );
-    if (result == null || result.files.isEmpty) return;
-    final bytes = result.files.first.bytes;
-    if (bytes == null || bytes.isEmpty) return;
-
-    await homeController.importInstallerPackage(
-      bytes,
+    await homeController.startBuiltinInstall(
       onCommandDone: _refreshEnvironmentStatus,
     );
-    _showSnack('正在终端导入离线安装脚本包');
-    if (mounted) widget.onNavigate?.call(2);
+    _showSnack('正在终端执行安装，请切换至终端查看进度');
+    widget.onNavigate?.call(2);
+  }
+
+  /// 切到终端标签页
+  void _openTerminalTab() {
+    widget.onNavigate?.call(2);
   }
 
   void _openSettings() {
@@ -899,10 +755,9 @@ class _LauncherPageState extends State<LauncherPage>
         ),
         child: Column(
           children: [
-            GlassAppBar(
-              title: '主页',
-              opacity: homeController.topNavGlassOpacity.value,
-              blur: homeController.glassBlurAmount.value * 30,
+            AppBar(
+              title: const Text('主页'),
+              automaticallyImplyLeading: false,
               actions: [
                 IconButton(
                   tooltip: '设置',
@@ -1069,10 +924,8 @@ class _LauncherPageState extends State<LauncherPage>
 
   Widget _buildQuickStartCard(BuildContext context) {
     final installed = _environmentStates['astrbot']?.installed == true;
-    final card = GlassPanel(
+    final card = AppCard(
       padding: const EdgeInsets.all(16),
-      opacity: homeController.cardGlassOpacity.value,
-      blur: homeController.glassBlurAmount.value * 30,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1200,10 +1053,8 @@ class _LauncherPageState extends State<LauncherPage>
 
   Widget _buildNapCatAccountsCard(BuildContext context) {
     final installed = _environmentStates['napcat']?.installed == true;
-    final card = GlassPanel(
+    final card = AppCard(
       padding: const EdgeInsets.all(16),
-      opacity: homeController.cardGlassOpacity.value,
-      blur: homeController.glassBlurAmount.value * 30,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2338,10 +2189,8 @@ class _LauncherPageState extends State<LauncherPage>
   }
 
   Widget _buildOpenCodeCard(BuildContext context) {
-    return GlassPanel(
+    return AppCard(
       padding: const EdgeInsets.all(16),
-      opacity: homeController.cardGlassOpacity.value,
-      blur: homeController.glassBlurAmount.value * 30,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2490,10 +2339,8 @@ class _LauncherPageState extends State<LauncherPage>
       ),
     ];
 
-    return GlassPanel(
+    return AppCard(
       padding: const EdgeInsets.all(16),
-      opacity: homeController.cardGlassOpacity.value,
-      blur: homeController.glassBlurAmount.value * 30,
       child: ExpansionTile(
         tilePadding: EdgeInsets.zero,
         onExpansionChanged: (expanded) {
@@ -2529,22 +2376,18 @@ class _LauncherPageState extends State<LauncherPage>
                   child: _homeButton(
                     context: context,
                     tone: _HomeButtonTone.primary,
-                    onPressed: _checkThenOfferInstallerUpdate,
-                    icon: const Icon(Icons.system_update_alt),
-                    label: Text(
-                      _installerScriptState == _InstallerScriptState.notDownloaded
-                          ? '下载脚本'
-                          : '更新脚本',
-                    ),
+                    onPressed: _runBuiltinInstaller,
+                    icon: const Icon(Icons.rocket_launch_outlined),
+                    label: const Text('一键安装'),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: _homeButton(
                     context: context,
-                    onPressed: _importInstallerPackage,
-                    icon: const Icon(Icons.upload_file),
-                    label: const Text('导入脚本'),
+                    onPressed: _openTerminalTab,
+                    icon: const Icon(Icons.terminal_outlined),
+                    label: const Text('打开终端'),
                   ),
                 ),
               ],
@@ -2635,63 +2478,81 @@ class _EnvironmentLoadingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final failed = error != null;
+
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: Ds.s8, vertical: Ds.s6),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (failed)
-              Icon(
-                Icons.error_outline,
-                size: 32,
-                color: Theme.of(context).colorScheme.error,
-              )
-            else
-              const SizedBox(
-                width: 32,
-                height: 32,
-                child: CircularProgressIndicator(strokeWidth: 3),
+            // 状态标识
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: (failed ? AppTheme.err : AppTheme.primary)
+                    .withValues(alpha: 0.12),
+                borderRadius: Ds.brLg,
               ),
-            const SizedBox(height: 16),
+              child: failed
+                  ? const Icon(Icons.error_outline_rounded,
+                      size: Ds.iXl, color: AppTheme.err)
+                  : const Padding(
+                      padding: EdgeInsets.all(18),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 3,
+                        color: AppTheme.primary,
+                      ),
+                    ),
+            ),
+            const SizedBox(height: Ds.s5),
+
+            // 标题
             Text(
               failed ? '运行环境准备失败' : stage,
-              style: Theme.of(context).textTheme.titleMedium,
+              textAlign: TextAlign.center,
+              style: DsText.title,
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: Ds.s2),
+
+            // 说明
             Text(
               failed
-                  ? '请重试后再进入主页'
-                  : '首次启动可能需要一些时间，完成后将自动进入主页',
+                  ? '请检查网络后重试，或前往终端查看详细日志'
+                  : '首次启动需要下载运行环境，请保持网络畅通',
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+              style: DsText.body.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
+
             if (!failed) ...[
-              const SizedBox(height: 16),
-              SizedBox(
-                width: 220,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(99),
-                  child: LinearProgressIndicator(value: progress),
+              const SizedBox(height: Ds.s6),
+              // 进度条
+              ClipRRect(
+                borderRadius: Ds.brPill,
+                child: LinearProgressIndicator(
+                  value: progress <= 0 ? null : progress,
+                  minHeight: 6,
+                  backgroundColor:
+                      theme.colorScheme.onSurface.withValues(alpha: 0.08),
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: Ds.s3),
               Text(
                 '${(progress * 100).round()}%',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                style: DsText.bodyStrong.copyWith(color: AppTheme.primary),
               ),
             ],
+
             if (failed) ...[
-              const SizedBox(height: 16),
-              FilledButton.icon(
+              const SizedBox(height: Ds.s6),
+              AppButton(
+                label: '重试',
+                icon: Icons.refresh_rounded,
                 onPressed: onRetry,
-                icon: const Icon(Icons.refresh),
-                label: const Text('重试'),
               ),
             ],
           ],

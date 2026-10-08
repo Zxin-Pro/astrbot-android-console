@@ -9,7 +9,8 @@ import 'package:xterm/xterm.dart';
 import '../../../core/config/ui_preferences.dart';
 import '../../controllers/terminal_controller.dart';
 import '../../controllers/terminal_tab_manager.dart';
-import '../../widgets/glass_panel.dart';
+import '../../../core/theme/ds.dart';
+import '../../widgets/app_kit.dart';
 import 'terminal_theme.dart';
 
 class TerminalTabView extends StatefulWidget {
@@ -231,7 +232,7 @@ class _TerminalTabViewState extends State<TerminalTabView> {
       final granted = await _ensureStoragePermission(context);
       if (!granted) return;
 
-      final dir = Directory('/storage/emulated/0/Download/AstrBotBubble');
+      final dir = Directory('/storage/emulated/0/Download/深夜流璃');
       await dir.create(recursive: true);
       final timestamp = DateTime.now()
           .toIso8601String()
@@ -507,11 +508,15 @@ class _TerminalTabViewState extends State<TerminalTabView> {
   ) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
-      child: GlassPanel(
-        borderRadius: BorderRadius.circular(18),
+      child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 6),
-        opacity: homeController.topNavGlassOpacity.value,
-        blur: homeController.glassBlurAmount.value * 30,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: Ds.brMd,
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
+          ),
+        ),
         child: MediaQuery.withNoTextScaling(
           child: SizedBox(
             height: 38,

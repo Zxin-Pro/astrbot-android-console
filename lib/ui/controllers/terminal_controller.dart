@@ -20,7 +20,6 @@ import '../../core/utils/file_utils.dart';
 import '../routes/app_routes.dart';
 import 'terminal_tab_manager.dart';
 
-enum InstallerUpdateCheckResult { failed, timedOut, updateAvailable, upToDate }
 
 class NapCatInstanceDefaults {
   static const String storageKey = 'napcat_instances';
@@ -99,7 +98,6 @@ class HomeController extends GetxController {
   // 终端标签页管理器
   late final TerminalTabManager terminalTabManager;
   // bool vsCodeStaring = false;
-  SettingNode privacySetting = 'privacy'.setting;
   SettingNode napCatWebUiEnabled = 'napcat_webui_enabled'.setting;
   Pty? pseudoTerminal;
   Pty? napcatTerminal;
@@ -1050,104 +1048,32 @@ fi
     );
   }
 
-  Future<void> checkInstallerUpdate({
+
+
+
+
+
+  /// 一键安装：使用 APK 内置的安装脚本，不联网下载任何安装器
+  Future<void> startBuiltinInstall({
     void Function()? onCommandDone,
-    void Function(bool updateAvailable)? onUpdateAvailable,
-    void Function(InstallerUpdateCheckResult result)? onResult,
-    void Function(void Function() cancel)? onCancelReady,
-  }) {
-    const maxOutputBufferLength = 8192;
-    String? currentVersion;
-    String? remoteVersion;
-    var outputBuffer = '';
-    var resultNotified = false;
-    void notifyResult(InstallerUpdateCheckResult result) {
-      if (resultNotified) return;
-      resultNotified = true;
-      onResult?.call(result);
-    }
-    return _openInstallerBootstrapTerminal(
-      title: 'Check installer updates',
-      doneMarker: '__ASTRBOT_INSTALLER_CHECK_DONE__',
-      installerCommand: '--check',
-      diagnosticLabel: 'Installer check',
-      preserveTabOnCancel: true,
-      onOutput: (output) {
-        outputBuffer += output;
-        if (outputBuffer.length > maxOutputBufferLength) {
-          outputBuffer = outputBuffer.substring(
-            outputBuffer.length - maxOutputBufferLength,
-          );
-        }
-        if (outputBuffer.contains('__ASTRBOT_INSTALLER_COMMAND_FAILED__:')) {
-          notifyResult(InstallerUpdateCheckResult.failed);
-          return;
-        }
-        final current = RegExp(r'Current version:\s*([^\s]+)')
-            .firstMatch(outputBuffer);
-        final remote = RegExp(r'Verified remote version:\s*([^\s]+)')
-            .firstMatch(outputBuffer);
-        currentVersion ??= current?.group(1);
-        remoteVersion ??= remote?.group(1);
-      },
-      onCommandDone: () {
-        final current = _parseInstallerVersion(currentVersion);
-        final remote = _parseInstallerVersion(remoteVersion);
-        final available = remote != null &&
-            (current == null || _compareInstallerVersions(remote, current) > 0);
-        onUpdateAvailable?.call(available);
-        notifyResult(
-          available
-              ? InstallerUpdateCheckResult.updateAvailable
-              : InstallerUpdateCheckResult.upToDate,
-        );
-        onCommandDone?.call();
-      },
-      onCommandExit: (_) => notifyResult(InstallerUpdateCheckResult.failed),
-      onStarted: onCancelReady,
-    );
-  }
-
-  List<int>? _parseInstallerVersion(String? value) {
-    if (value == null || !RegExp(r'^\d+\.\d+\.\d+$').hasMatch(value)) {
-      return null;
-    }
-    return value.split('.').map(int.parse).toList(growable: false);
-  }
-
-  int _compareInstallerVersions(List<int> left, List<int> right) {
-    for (var i = 0; i < 3; i++) {
-      final difference = left[i] - right[i];
-      if (difference != 0) return difference;
-    }
-    return 0;
-  }
-
-  Future<void> updateInstaller({
-    void Function()? onCommandDone,
-  }) {
-    return _openInstallerBootstrapTerminal(
-      title: 'Update installer',
-      doneMarker: '__ASTRBOT_INSTALLER_UPDATE_DONE__',
-      installerCommand: '--update',
+  }) async {
+    await _openInstallerBootstrapTerminal(
+      title: '安装组件',
+      doneMarker: '__ASTRBOT_INSTALLER_RUN_DONE__',
+      installerCommand: '--run --step all',
       onCommandDone: onCommandDone,
     );
   }
 
-  Future<void> importInstallerPackage(
-    List<int> archiveBytes, {
+  /// 安装单个组件
+  Future<void> installStep(
+    String step, {
     void Function()? onCommandDone,
-  }) async {
-    const archiveName = 'astrbot-installer-offline-import.tar.gz';
-    final hostArchive = File('${RuntimeEnvir.homePath}/$archiveName');
-    await hostArchive.parent.create(recursive: true);
-    await hostArchive.writeAsBytes(archiveBytes, flush: true);
-    await _openInstallerBootstrapTerminal(
-      title: 'Import installer package',
-      doneMarker: '__ASTRBOT_INSTALLER_IMPORT_DONE__',
-      installerCommand: '--import /root/$archiveName',
-      hostPreparation:
-          'cp ${_shellSingleQuote(hostArchive.path)} "\$UBUNTU_PATH/root/$archiveName"',
+  }) {
+    return _openInstallerBootstrapTerminal(
+      title: '安装 $step',
+      doneMarker: '__ASTRBOT_INSTALLER_RUN_DONE__',
+      installerCommand: '--run --step $step',
       onCommandDone: onCommandDone,
     );
   }
@@ -1458,15 +1384,6 @@ fi
     // 为 Google Play 上架做准备
     // For Google Play
     Future.delayed(Duration.zero, () async {
-      if (privacySetting.get() == null) {
-        await Get.to(PrivacyAgreePage(
-          onAgreeTap: () {
-            privacySetting.set(true);
-            Get.back();
-          },
-        ));
-      }
-
       // 加载并启动 AstrBot
       // 在终端创建完成后初始化固定标签页
       // 等待terminal创建完成

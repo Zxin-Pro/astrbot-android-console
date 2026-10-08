@@ -117,8 +117,8 @@ class _AstrBotState extends State<AstrBot> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return GetMaterialApp(
       title: 'AstrBot 深夜流璃',
-      theme: AppTheme.build(),
-      darkTheme: AppTheme.build(),
+      theme: AppTheme.build(brightness: Brightness.light),
+      darkTheme: AppTheme.build(brightness: Brightness.dark),
       themeMode: ThemeMode.dark,
       // locale: const Locale('zh', 'CN'),
       // locale: const Locale('en'),

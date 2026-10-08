@@ -71,7 +71,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: astrbot-bubble-apk
+          name: astrbot-shenye-liuli-arm64
           path: out/astrbot-bubble-arm64.apk
           retention-days: 30
 
