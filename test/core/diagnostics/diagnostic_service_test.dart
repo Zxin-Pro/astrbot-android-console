@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:astrbot_android/core/diagnostics/diagnostic_service.dart';
-import 'package:astrbot_android/ui/controllers/terminal_controller.dart';
+import 'package:shenye_liuli/core/diagnostics/diagnostic_service.dart';
+import 'package:shenye_liuli/ui/controllers/terminal_controller.dart';
 
 void main() {
   group('firstNonEmptyDiagnosticValue', () {

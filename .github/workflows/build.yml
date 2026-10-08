@@ -48,10 +48,12 @@ jobs:
           set +e
           flutter build apk --release --flavor normal --target-platform android-arm64 --verbose > /tmp/build.log 2>&1
           echo "flutter exit code = $?"
-          echo "================= 错误摘要 ================="
-          grep -nE 'FAILED|What went wrong|Execution failed|error:|Caused by|Exception' /tmp/build.log | tail -40 || true
-          echo "================= 日志尾部 ================="
-          tail -30 /tmp/build.log || true
+          echo "================= Dart 编译错误 ================="
+          grep -nE "^Error:|^.*\.dart:[0-9]+:[0-9]+: Error:|Error: .*\.dart" /tmp/build.log | head -60 || true
+          echo "================= Gradle 错误 ================="
+          grep -nE 'FAILED|What went wrong|Execution failed|Caused by' /tmp/build.log | tail -25 || true
+          echo "================= 最后 80 行 ================="
+          tail -80 /tmp/build.log || true
 
       - name: Collect
         run: |
@@ -64,15 +66,15 @@ jobs:
           fi
           [ -n "$SRC" ] && [ -f "$SRC" ] || { echo "❌ 构建产物不存在"; exit 1; }
           echo "采用产物: $SRC"
-          cp "$SRC" out/astrbot-bubble-arm64.apk
+          cp "$SRC" out/shenye-liuli-arm64.apk
           ls -lh out/
           sha256sum out/*.apk
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: astrbot-shenye-liuli-arm64
-          path: out/astrbot-bubble-arm64.apk
+          name: shenye-liuli-arm64
+          path: out/shenye-liuli-arm64.apk
           retention-days: 30
 
       - name: Publish to latest release
@@ -82,9 +84,9 @@ jobs:
           tag_name: latest
           name: Latest Build
           make_latest: true
-          files: out/astrbot-bubble-arm64.apk
+          files: out/shenye-liuli-arm64.apk
           body: |
-            AstrBot 泡泡版 Android App（arm64-v8a）
+            AstrBot 深夜流璃 · Android 客户端（arm64-v8a）
 
             基于 Flutter 3.35.7 自动构建。
             内置 proot + Ubuntu 24.04 rootfs，免 Termux 直接运行 AstrBot。
