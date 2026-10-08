@@ -15,7 +15,15 @@ if [ -z "$SDK" ] || [ ! -d "$SDK" ]; then
 fi
 
 BT="$(ls -d "$SDK"/build-tools/* 2>/dev/null | sort -V | tail -1 || true)"
-PLATFORM="$(ls -d "$SDK"/platforms/* 2>/dev/null | sort -V | tail -1 || true)"
+
+# 优先使用 android-34 平台，没有则退到最新
+PLATFORM_API="${PLATFORM_API:-34}"
+if [ -d "$SDK/platforms/android-$PLATFORM_API" ]; then
+  PLATFORM="$SDK/platforms/android-$PLATFORM_API"
+else
+  PLATFORM="$(ls -d "$SDK"/platforms/* 2>/dev/null | sort -V | tail -1 || true)"
+fi
+
 [ -n "$BT" ] || { echo "[错误] 缺少 build-tools，请先安装"; exit 1; }
 [ -n "$PLATFORM" ] || { echo "[错误] 缺少 platforms，请先安装"; exit 1; }
 

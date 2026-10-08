@@ -11,24 +11,38 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
 
       - name: 安装 JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: 安装 Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: 安装 build-tools 与 platform
+      - name: 查看 runner 自带的 Android SDK
         run: |
-          sdkmanager --install "platforms;android-34" "build-tools;34.0.0" > /dev/null
           echo "ANDROID_HOME=$ANDROID_HOME"
-          ls "$ANDROID_HOME/build-tools"
+          echo "--- build-tools ---"; ls "$ANDROID_HOME/build-tools" 2>/dev/null || echo "(无)"
+          echo "--- platforms   ---"; ls "$ANDROID_HOME/platforms"   2>/dev/null || echo "(无)"
+          echo "--- cmdline-tools ---"; ls "$ANDROID_HOME/cmdline-tools" 2>/dev/null || echo "(无)"
+
+      - name: 确保 build-tools 34 与 platform 34 就绪
+        run: |
+          SDKMANAGER="$(ls "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager 2>/dev/null | head -1)"
+          if [ -n "$SDKMANAGER" ]; then
+            echo "sdkmanager: $SDKMANAGER"
+            yes | "$SDKMANAGER" --install "platforms;android-34" "build-tools;34.0.0" >/dev/null 2>&1 || true
+          else
+            echo "未找到 sdkmanager，将直接使用 runner 已有组件"
+          fi
+          echo "--- build-tools ---"; ls "$ANDROID_HOME/build-tools"
+          echo "--- platforms   ---"; ls "$ANDROID_HOME/platforms"
 
       - name: 构建 APK
         run: bash scripts/build.sh
@@ -52,7 +66,7 @@ jobs:
             - 内嵌 AstrBot / NapCat 管理面板
             - 一键调用 Termux 安装 / 启动 / 停止 / 看日志
 
-            使用前请确保 Termux 已开启外部调用：
-            `~/.termux/termux.properties` 中设置 `allow-external-apps=true`
+            使用前请在 Termux 中开启外部调用：
+            `~/.termux/termux.properties` 里设置 `allow-external-apps=true`
           files: dist/*.apk
           make_latest: true
