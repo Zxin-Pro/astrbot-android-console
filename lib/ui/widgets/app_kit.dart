@@ -1,23 +1,53 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/ds.dart';
 
-/// 页面背景 —— 替代原来的 BubbleBackground
+/// 页面背景
 ///
-/// 原来的实现是「粉蓝绿渐变 + 磨砂玻璃叠加」，观感偏轻浮且性能差。
-/// 现在改为纯色底 + 顶部极淡的品牌色光晕，安静、省电、不抢内容。
+/// 纯色底 + 顶部极淡的品牌色光晕；若用户设置了自定义背景图，则铺在底层
+/// 并叠加一层半透明遮罩，保证上层卡片文字始终清晰可读。
 class AppBackground extends StatelessWidget {
   final Widget child;
 
-  const AppBackground({super.key, required this.child});
+  /// 用户自定义背景图路径（可为空）
+  final String? imagePath;
+
+  const AppBackground({super.key, required this.child, this.imagePath});
 
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
+    final base = dark ? AppTheme.bg : AppTheme.bgLight;
+
+    // 有自定义图：铺图 + 遮罩
+    final hasImage = imagePath != null &&
+        imagePath!.isNotEmpty &&
+        File(imagePath!).existsSync();
+
+    if (hasImage) {
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.file(
+            File(imagePath!),
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+          ),
+          // 遮罩：深色主题压暗，亮色主题提亮
+          ColoredBox(
+            color: base.withValues(alpha: dark ? 0.78 : 0.86),
+          ),
+          child,
+        ],
+      );
+    }
+
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: dark ? AppTheme.bg : AppTheme.bgLight,
+        color: base,
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,

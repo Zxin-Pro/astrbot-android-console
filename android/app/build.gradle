@@ -53,11 +53,6 @@ android {
         normal {
             dimension "distribution"
         }
-        profileTest {
-            dimension "distribution"
-            applicationIdSuffix ".profile"
-            resValue "string", "app_name", "AstrBot深夜流璃·测试"
-        }
     }
 
     buildTypes {

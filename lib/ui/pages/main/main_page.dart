@@ -65,12 +65,15 @@ class _MainPageState extends State<MainPage> {
       transitionDuration: Ds.normal,
       reverseTransitionDuration: Ds.normal,
       pageBuilder: (context, animation, secondaryAnimation) {
-        return AppBackground(
-          child: Scaffold(
-            backgroundColor: Colors.transparent,
-            body: SettingsPage(
-              astrBotController: WebViewPage.astrBotController,
-              napCatController: WebViewPage.napCatController,
+        return Obx(
+          () => AppBackground(
+            imagePath: homeController.homeBackgroundPath.value,
+            child: Scaffold(
+              backgroundColor: Colors.transparent,
+              body: SettingsPage(
+                astrBotController: WebViewPage.astrBotController,
+                napCatController: WebViewPage.napCatController,
+              ),
             ),
           ),
         );
@@ -96,12 +99,15 @@ class _MainPageState extends State<MainPage> {
     return PopScope<Object?>(
       canPop: _currentIndex != 1,
       onPopInvokedWithResult: _handlePopInvoked,
-      child: AppBackground(
-        child: Scaffold(
-          backgroundColor: Colors.transparent,
-          extendBody: true,
-          body: _buildMainTabs(),
-          bottomNavigationBar: _buildBottomNav(context),
+      child: Obx(
+        () => AppBackground(
+          imagePath: homeController.homeBackgroundPath.value,
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            extendBody: true,
+            body: _buildMainTabs(),
+            bottomNavigationBar: _buildBottomNav(context),
+          ),
         ),
       ),
     );

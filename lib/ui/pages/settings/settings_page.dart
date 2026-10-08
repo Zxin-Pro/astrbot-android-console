@@ -17,6 +17,7 @@ import '../../../core/constants/scripts.dart' as scripts;
 import '../../../core/services/password_manager.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/config/environment_config.dart';
+import '../../../core/theme/ds.dart';
 import '../../widgets/diagnostic_dialog.dart';
 
 class SettingsPage extends StatefulWidget {
