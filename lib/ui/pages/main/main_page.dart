@@ -1,0 +1,223 @@
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
+import '../../controllers/terminal_controller.dart';
+import '../../widgets/glass_panel.dart';
+import '../../../core/theme/app_theme.dart';
+import '../launcher/launcher_page.dart';
+import '../settings/settings_page.dart';
+import '../terminal/terminal_tab_view.dart';
+import '../webview/webview_page.dart';
+
+class MainPage extends StatefulWidget {
+  const MainPage({super.key});
+
+  @override
+  State<MainPage> createState() => _MainPageState();
+}
+
+class _MainPageState extends State<MainPage> {
+  static const double _bottomNavReservedHeight = 60;
+
+  final HomeController homeController = Get.put(HomeController());
+  Worker? _mainTabWorker;
+  int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _mainTabWorker = ever<int?>(homeController.pendingMainTabIndex, (index) {
+      if (index == null || index < 0 || index > 2) return;
+      _openTab(index);
+      homeController.clearPendingMainTabIndex(index);
+    });
+  }
+
+  @override
+  void dispose() {
+    _mainTabWorker?.dispose();
+    super.dispose();
+  }
+
+  void _openTab(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+
+  void _openSettings() {
+    Navigator.of(context).push(_buildSettingsRoute());
+  }
+
+  void _closeSettings() {
+    Navigator.of(context).maybePop();
+  }
+
+  void _handlePopInvoked(bool didPop, Object? result) {
+    // The embedded WebView handles its own history first. It calls
+    // onBackToHome only when the current page has no browser history.
+    if (didPop || _currentIndex != 1) return;
+  }
+
+  Route<void> _buildSettingsRoute() {
+    return PageRouteBuilder<void>(
+      transitionDuration: const Duration(milliseconds: 220),
+      reverseTransitionDuration: const Duration(milliseconds: 200),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return Obx(
+          () => BubbleBackground(
+            imagePath: homeController.homeBackgroundPath.value,
+            child: Scaffold(
+              backgroundColor: Colors.transparent,
+              body: _buildSettingsPage(),
+            ),
+          ),
+        );
+      },
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        final slideAnimation = Tween<Offset>(
+          begin: const Offset(1, 0),
+          end: Offset.zero,
+        ).animate(
+          CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+            reverseCurve: Curves.easeInCubic,
+          ),
+        );
+        return SlideTransition(
+          position: slideAnimation,
+          child: child,
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _buildMainShell(context);
+  }
+
+  Widget _buildMainShell(BuildContext context) {
+    return PopScope<Object?>(
+      canPop: _currentIndex != 1,
+      onPopInvokedWithResult: _handlePopInvoked,
+      child: Obx(
+        () => BubbleBackground(
+          imagePath: homeController.homeBackgroundPath.value,
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            extendBody: true,
+            body: _buildMainTabs(),
+            bottomNavigationBar: _buildBottomNav(context),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingsPage() {
+    return SizedBox.expand(
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: ColoredBox(
+              color: AppTheme.bg.withValues(
+                alpha: homeController.statusOverlayOpacity.value,
+              ),
+            ),
+          ),
+          Column(
+            children: [
+              GlassAppBar(
+                title: '设置',
+                opacity: homeController.topNavGlassOpacity.value,
+                blur: homeController.glassBlurAmount.value * 30,
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: _closeSettings,
+                ),
+              ),
+              Expanded(
+                child: SettingsPage(
+                  astrBotController: WebViewPage.astrBotController,
+                  napCatController: WebViewPage.napCatController,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMainTabs() {
+    final keyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
+    final webViewBottomInset = keyboardVisible ? 0.0 : _bottomNavReservedHeight;
+    return SafeArea(
+      bottom: false,
+      child: IndexedStack(
+        index: _currentIndex,
+        children: [
+          LauncherPage(
+            onNavigate: _openTab,
+            onOpenSettings: _openSettings,
+          ),
+          WebViewPage(
+            embedded: true,
+            bottomContentInset: webViewBottomInset,
+            onBackToHome: () => _openTab(0),
+          ),
+          TerminalTabView(
+            bottomContentInset:
+                keyboardVisible ? 0 : _bottomNavReservedHeight,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomNav(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+        child: GlassPanel(
+          borderRadius: BorderRadius.circular(24),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          opacity: homeController.cardGlassOpacity.value,
+          blur: homeController.glassBlurAmount.value * 30,
+          child: MediaQuery.withNoTextScaling(
+            child: NavigationBar(
+              selectedIndex: _currentIndex,
+              onDestinationSelected: _openTab,
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              height: 46,
+              labelTextStyle: WidgetStateProperty.all(
+                const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+              ),
+              destinations: const [
+                NavigationDestination(
+                  icon: Icon(Icons.home_outlined, size: 22),
+                  selectedIcon: Icon(Icons.home, size: 22),
+                  label: '主页',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.language_outlined, size: 22),
+                  selectedIcon: Icon(Icons.language, size: 22),
+                  label: 'WebUI',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.terminal_outlined, size: 22),
+                  selectedIcon: Icon(Icons.terminal, size: 22),
+                  label: '终端',
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
