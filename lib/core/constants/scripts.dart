@@ -526,13 +526,19 @@ login_ubuntu(){
 
 // 生成完整的通用脚本，需要传入当前版本号
 // Generate common script with current version
-String getInstallerCopyFilesScript() {
+String getInstallerCopyFilesScript(String currentVersion) {
   return '''
 copy_files(){
   mkdir -p "\$UBUNTU_PATH/root"
   cp ~/astrbot-installer-bootstrap.sh "\$UBUNTU_PATH/root/astrbot-installer-bootstrap.sh"
   chmod 700 "\$UBUNTU_PATH/root/astrbot-installer-bootstrap.sh"
+  cp ~/astrbot-startup.sh "\$UBUNTU_PATH/root/astrbot-startup.sh"
+  chmod 700 "\$UBUNTU_PATH/root/astrbot-startup.sh"
   cp ~/cmd_config.json "\$UBUNTU_PATH/root/cmd_config.json"
+  mkdir -p "\$UBUNTU_PATH/root/.astrbot-android/installer/current"
+  cp ~/astrbot-startup.sh "\$UBUNTU_PATH/root/.astrbot-android/installer/current/astrbot-startup.sh"
+  chmod 700 "\$UBUNTU_PATH/root/.astrbot-android/installer/current/astrbot-startup.sh"
+  printf '%s\\n' '$currentVersion' > "\$UBUNTU_PATH/root/.astrbot-android/installer/version"
   echo "installer bootstrap refreshed"
 }
 ''';
@@ -545,7 +551,7 @@ $changeUbuntuNobleSource
 $installUbuntu
 $setupFakeSysdata
 $loginUbuntu
-${getInstallerCopyFilesScript()}
+${getInstallerCopyFilesScript(currentVersion)}
 clear_lines
 start_astrbot(){
   login_ubuntu "export TMPDIR='${RuntimeEnvir.tmpPath}'; export ASTRBOT_DASHBOARD_PORT='${ServicePorts.dashboardPort}'; if [ ! -x /root/.local/bin/uv ] || [ ! -d /root/AstrBot ] || [ ! -f /root/AstrBot/pyproject.toml ] || [ ! -f /root/AstrBot/main.py ] || [ ! -d /root/AstrBot/.venv ]; then echo __ASTRBOT_MANUAL_ENV_REQUIRED__; echo 'AstrBot 环境未安装完整，请到主页环境管理安装。'; exit 1; fi; cd /root/AstrBot; echo 'AstrBot 启动中'; /root/.local/bin/uv run --no-sync main.py"

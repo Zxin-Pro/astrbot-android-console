@@ -13,7 +13,6 @@ import 'package:flutter/services.dart';
 import '../../core/config/app_config.dart';
 import '../../core/config/environment_config.dart';
 import '../../core/config/service_ports.dart';
-import '../../core/config/ui_preferences.dart';
 import '../../generated/l10n.dart';
 import '../../core/constants/scripts.dart';
 import '../../core/utils/file_utils.dart';
@@ -1211,8 +1210,23 @@ fi
         'assets/cmd_config.json', '${RuntimeEnvir.homePath}/cmd_config.json');
 
     final appVersion = await getAppVersion();
+    await _releaseInstallerStartupScript(appVersion);
     File('${RuntimeEnvir.homePath}/common.sh').writeAsStringSync(
       _toUnixLineEndings(getCommonScript(appVersion)),
+    );
+  }
+
+  /// 释放内置安装脚本 astrbot-startup.sh，并把当前版本号写入其中。
+  /// Release the built-in installer script and stamp the app version into it.
+  Future<void> _releaseInstallerStartupScript(String appVersion) async {
+    final startupScript = File('${RuntimeEnvir.homePath}/astrbot-startup.sh');
+    final data = await rootBundle.load('assets/astrbot-startup.sh');
+    final bytes =
+        data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+    final versioned = utf8.decode(bytes).replaceAll('{{VERSION}}', appVersion);
+    await startupScript.writeAsString(
+      _toUnixLineEndings(versioned),
+      flush: true,
     );
   }
 
@@ -1379,7 +1393,6 @@ fi
     _loadCustomWebViews();
     _loadHiddenWebUiTargetIds();
     _loadNapCatInstances();
-    _loadUiPreferences();
 
     // 为 Google Play 上架做准备
     // For Google Play
@@ -1458,56 +1471,6 @@ fi
   void setNapCatWebUiEnabled(bool value) {
     napCatWebUiEnabled.set(value);
     napCatWebUiEnabledRx.value = value;
-  }
-
-  void _loadUiPreferences() {
-    homeBackgroundPath.value = UiPreferences.homeBackgroundPath;
-    cardGlassOpacity.value = UiPreferences.cardGlassOpacity;
-    glassBlurAmount.value = UiPreferences.glassBlurAmount;
-    topNavGlassOpacity.value = UiPreferences.topNavGlassOpacity;
-    statusOverlayOpacity.value = UiPreferences.statusOverlayOpacity;
-    terminalOverlayOpacity.value = UiPreferences.terminalOverlayOpacity;
-    homeFontScale.value = UiPreferences.homeFontScale;
-  }
-
-  void setHomeBackgroundPath(String path) {
-    UiPreferences.saveHomeBackgroundPath(path);
-    homeBackgroundPath.value = path;
-  }
-
-  void clearHomeBackgroundPath() {
-    UiPreferences.clearHomeBackgroundPath();
-    homeBackgroundPath.value = '';
-  }
-
-  void setCardGlassOpacity(double value) {
-    UiPreferences.saveCardGlassOpacity(value);
-    cardGlassOpacity.value = UiPreferences.cardGlassOpacity;
-  }
-
-  void setGlassBlurAmount(double value) {
-    UiPreferences.saveGlassBlurAmount(value);
-    glassBlurAmount.value = UiPreferences.glassBlurAmount;
-  }
-
-  void setTopNavGlassOpacity(double value) {
-    UiPreferences.saveTopNavGlassOpacity(value);
-    topNavGlassOpacity.value = UiPreferences.topNavGlassOpacity;
-  }
-
-  void setStatusOverlayOpacity(double value) {
-    UiPreferences.saveStatusOverlayOpacity(value);
-    statusOverlayOpacity.value = UiPreferences.statusOverlayOpacity;
-  }
-
-  void setTerminalOverlayOpacity(double value) {
-    UiPreferences.saveTerminalOverlayOpacity(value);
-    terminalOverlayOpacity.value = UiPreferences.terminalOverlayOpacity;
-  }
-
-  void setHomeFontScale(double value) {
-    UiPreferences.saveHomeFontScale(value);
-    homeFontScale.value = UiPreferences.homeFontScale;
   }
 
   void _loadNapCatInstances() {

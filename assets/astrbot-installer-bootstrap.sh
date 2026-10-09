@@ -48,6 +48,46 @@ require_installer() {
     fail "内置安装脚本缺失：$BUILTIN_INSTALLER"
 }
 
+# 从内置安装脚本里解析版本号（纯 bash，不依赖 grep/sed）
+detect_installer_version() {
+  local line version=''
+  if [ -f "$BUILTIN_INSTALLER" ]; then
+    while IFS= read -r line || [ -n "$line" ]; do
+      case "$line" in
+        ASTRBOT_APP_VERSION=*)
+          version="${line#ASTRBOT_APP_VERSION=}"
+          version="${version%\"}"
+          version="${version#\"}"
+          break
+          ;;
+      esac
+    done < "$BUILTIN_INSTALLER"
+  fi
+  printf '%s' "$version"
+}
+
+# 发布安装脚本状态：版本号 + 运行时副本（App 侧据此判断脚本是否就绪）
+publish_installer_state() {
+  local version
+  version="$(detect_installer_version)"
+  case "$version" in
+    [0-9]*.[0-9]*.[0-9]*) ;;
+    *) version='' ;;
+  esac
+
+  mkdir -p "$STATE_DIR/current"
+  if [ -f "$BUILTIN_INSTALLER" ]; then
+    cp -f "$BUILTIN_INSTALLER" "$STATE_DIR/current/astrbot-startup.sh"
+    chmod 700 "$STATE_DIR/current/astrbot-startup.sh" 2>/dev/null || true
+  fi
+
+  if [ -n "$version" ]; then
+    printf '%s\n' "$version" > "$STATE_DIR/version"
+  elif [ ! -s "$STATE_DIR/version" ]; then
+    printf '0.0.0\n' > "$STATE_DIR/version"
+  fi
+}
+
 usage() {
   cat <<'EOF'
 用法:
@@ -65,8 +105,8 @@ main() {
     --prepare)
       ensure_tools
       log 'Bootstrap requirements are ready.'
-      # 写入就绪标记，供 App 侧判断
-      printf 'builtin\n' > "$STATE_DIR/version" 2>/dev/null || true
+      # 发布脚本版本与运行时副本，并写入就绪标记，供 App 侧判断
+      publish_installer_state
       : > "$STATE_DIR/bootstrap-ready" 2>/dev/null || true
       log '内置安装器就绪。'
       ;;
@@ -74,7 +114,7 @@ main() {
     --ensure|--check|--update)
       # 内置模式下这些远程操作都退化为「确认本地脚本可用」
       ensure_tools
-      printf 'builtin\n' > "$STATE_DIR/version" 2>/dev/null || true
+      publish_installer_state
       case "$command" in
         --check)
           log '当前为内置安装器（offline builtin），无远程更新。'
